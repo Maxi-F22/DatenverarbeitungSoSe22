@@ -12,6 +12,8 @@ class BuildingListHandler(o.SimpleHandler):
 
     buildings = []
 
+    buildings_count = 0
+
     def area(self, a):
         if 'building' in a.tags:
             wkb = wkbfab.create_multipolygon(a)
@@ -19,15 +21,16 @@ class BuildingListHandler(o.SimpleHandler):
             centroid = poly.representative_point()
             # self.print_building(a.tags, centroid.x, centroid.y)
             self.buildings.append({"lat": centroid.y, "lng": centroid.x})
+            self.buildings_count += 1
 
     def print_building(self, tags, lon, lat):
         name = tags.get('name', '')
         print("%f %f %-15s %s" % (lon, lat, tags['building'], name))
 
 class tower():
-    tower_radius: float = 3
-    tower_height: float = 8
-    roof_height: float = 2.5
+    tower_radius: float = 2
+    tower_height: float = 5
+    roof_height: float = 1.5
     roof_overhang: float = 0.5
 
     wall_thickness: float = 0.5
@@ -81,13 +84,36 @@ class tower():
         modifier_solidify.thickness = self.wall_thickness
 
 
+def map(maplength, mapwidth, lat_south, lat_north, long_west, long_east, list):
+    t = tower()
+    lat_calc = (maplength) / (lat_north - lat_south)
+    print(lat_calc)
+    long_calc = (mapwidth) / -((long_west - long_east))
+    print(long_calc)
+    a = 0
+    while a < len(list):
+        alat = float(list[a]["lat"])-lat_south
+        along = float(list[a]["lng"]) - long_west
+        x = lat_calc * alat
+        y = long_calc * along
+        # bpy.ops.mesh.primitive_uv_sphere_add(size=0.02, location=(x,y,z))
+        t.generate_tower(x, -y)
+        a += 1
 
 
 def main(osmfile):
+    ml = 150
+    lats = 48.0489500
+    latn = 48.0520900
+    mw = 300
+    lonw = 7.7151600
+    lone = 7.7235800
 
     handler = BuildingListHandler()
 
     handler.apply_file(osmfile)
+
+    print(handler.buildings_count)
 
     buildings = handler.buildings
 
@@ -95,20 +121,9 @@ def main(osmfile):
     bpy.ops.object.delete(use_global=False, confirm=False) # löscht selektierte objekte
     bpy.ops.outliner.orphans_purge() # löscht überbleibende Meshdaten etc.
 
-    t = tower()
-
-    for index, building in enumerate(buildings):
-        if (index < 1):
-            latitude = building["lat"]
-            longitude = building["lng"]
-
-            latitude_merc = o.geom.lonlat_to_mercator(o.geom.Coordinates(latitude, longitude)).x
-            longitude_merc = o.geom.lonlat_to_mercator(o.geom.Coordinates(latitude, longitude)).y
-
-            print(latitude_merc)
-            print(longitude_merc)
-            #t.generate_tower(latitude, longitude)
+    # bpy.ops.import_scene.obj( filepath = "D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/Haus_one.obj" )
+    
+    map(ml, mw, lats, latn, lonw, lone, buildings)
 
 if __name__ == '__main__':
-    # main("./Assets/furtwangen.osm")
-    main("C:/Users/maxif/Downloads/furtwangen.osm")
+    main("D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/gottenheim.osm")
