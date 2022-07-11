@@ -1,5 +1,6 @@
 import osmium as o
 import shapely.wkb as wkblib
+from shapely.geometry import mapping
 import os
 import random
 from math import radians
@@ -13,13 +14,25 @@ ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/Datenverar
 class BuildingListHandler(o.SimpleHandler):
 
     buildings = []
+    forests = []
 
     def area(self, a):
         if 'building' in a.tags:
             wkb = wkbfab.create_multipolygon(a)
             poly = wkblib.loads(wkb, hex=True)
-            centroid = poly.representative_point()
+            centroid = poly.centroid
             self.buildings.append({"lat": centroid.y, "lng": centroid.x})
+        
+        elif 'natural' or 'landuse' in a.tags:
+            wkb = wkbfab.create_multipolygon(a)
+            poly = wkblib.loads(wkb, hex=True)
+            bound = poly.boundary
+            centroid = poly.centroid
+            coords = []
+            for coord in mapping(bound)["coordinates"]:
+                for point_coord in coord:
+                    coords.append({"lat": point_coord[1], "lng": point_coord[0]})
+            self.forests.append({"center": (centroid.x, centroid.y, 0), "coords": coords})
         
 
 def createHouse(_coordX, _coordY, _iteration):
@@ -222,15 +235,66 @@ def createFloor(_length, _width):
 
     obj.data.materials.append(mat_floor)
 
-def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _list):
+def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buildings, _forests):
     lat_calc = (_mapLength) / (_latNorth - _latSouth)
     long_calc = (_mapWidth) / -((_longWest - _longEast))
     a = 0
-    createFloor(_mapLength, _mapWidth)
-    # while a < len(_list):
+    a_forest = 0
+    createFloor(_mapLength + 100, _mapWidth + 100)
+
+    file_path = ASSETS_PATH
+    inner_path = 'Object'
+    object_name = 'TreeTwo'
+
+    bpy.ops.wm.append(
+        filepath=os.path.join(file_path, inner_path, object_name),
+        directory=os.path.join(file_path, inner_path),
+        filename=object_name
+    )
+    obj = bpy.data.objects['TreeTwo']
+    for coll in obj.users_collection:
+        # Unlink the object
+        coll.objects.unlink(obj)
+
+    while a_forest < len(_forests):
+        forest_verts = []
+        for forest_border in _forests[a_forest]["coords"]:
+            alat_forest = float(forest_border["lat"]) - _latSouth
+            along_forest = float(forest_border["lng"]) - _longWest
+            x_forest = lat_calc * alat_forest
+            y_forest = long_calc * along_forest
+            forest_verts.append((x_forest, -y_forest, 0))
+
+        edges = [[i, i+1] for i in range(len(forest_verts)-1)]
+        faces = [[i for i in range(len(forest_verts)-1)]]
+
+        mesh = bpy.data.meshes.new("forest" + str(a_forest))
+        mesh.from_pydata(forest_verts, edges, faces)
+        mesh.update()
+
+        obj = bpy.data.objects.new("forest" + str(a_forest), mesh)
+
+        obj.modifiers.new("forestParticles" + str(a_forest), type='PARTICLE_SYSTEM')
+        part = obj.particle_systems[0]
+        settings = part.settings
+        settings.name = "forestParticlesSettings" + str(a_forest)
+        settings.particle_size = 0.25
+        settings.size_random = 0.1
+        settings.count = 100
+        settings.type = 'HAIR'
+        settings.render_type = 'OBJECT'
+        settings.use_rotations = True
+        settings.rotation_mode = 'NONE'
+        settings.instance_object = bpy.data.objects["TreeTwo"]
+
+        bpy.context.scene.collection.objects.link(obj)
+
+        a_forest += 1
+
+    # while a < len(_buildings):
     while a < 20:
-        alat = float(_list[a]["lat"]) - _latSouth
-        along = float(_list[a]["lng"]) - _longWest
+        alat = float(_buildings[a]["lat"]) - _latSouth
+        along = float(_buildings[a]["lng"]) - _longWest
         x = lat_calc * alat
         y = long_calc * along
         createHouse(x, -y, a)
@@ -250,6 +314,7 @@ def main(_osmfile):
     handler.apply_file(_osmfile)
 
     buildings = handler.buildings
+    forests = handler.forests
 
     bpy.ops.object.select_all(action='SELECT') # selektiert alle Objekte
     bpy.ops.object.delete(use_global=False, confirm=False) # löscht selektierte objekte
@@ -257,7 +322,7 @@ def main(_osmfile):
     for col in bpy.data.collections:
         bpy.data.collections.remove(col)
 
-    map(ml, mw, lats, latn, lonw, lone, buildings)
+    map(ml, mw, lats, latn, lonw, lone, buildings, forests)
 
 if __name__ == '__main__':
     main(OSM_PATH)
