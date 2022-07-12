@@ -36,13 +36,16 @@ def createWindowMaterialNight():
     eeveeObj.bloom_intensity = 0.5
 
 
+def checkDayAndNight(objWindows):
+    dayNightSet = False
+    if(dayNightSet==False):
+         mat = bpy.data.materials.get('Fenster')
+         objWindows.data.materials.append(mat)
+        #Sonne an Tageszeit anpassen
 
-def checkDayAndNight():
-    dayNight = True
-    if(dayNight==True):
-        print("Hello")
-  
-    
-    
+    elif(dayNightSet==True):
+         mat = bpy.data.materials.get('Licht_Fenster')
+         objWindows.data.materials.append(mat)
+         #Sonne an Tageszeit anpassen
     
    
