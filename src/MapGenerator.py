@@ -8,8 +8,11 @@ import bpy
 
 wkbfab = o.geom.WKBFactory()
 
-OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
-ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/allAssets.blend'
+#OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
+#ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/allAssets.blend'
+
+OSM_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
+ASSETS_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/allAssets.blend'
 
 class BuildingListHandler(o.SimpleHandler):
 
@@ -74,6 +77,8 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'downOne' + str(_iteration)
             objWindows = bpy.data.objects['FensterDownOne']
             objWindows.name = 'FensterDownOne' + str(_iteration)
+            #mat = bpy.data.materials.new(name="Fenster")
+            #objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -99,6 +104,8 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'downTwo' + str(_iteration)
             objWindows = bpy.data.objects['FensterDownTwo']
             objWindows.name = 'FensterDownTwo' + str(_iteration)
+            #mat = bpy.data.materials.new(name="Fenster")
+            #objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -145,6 +152,8 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'mid' + str(_iteration)
             objWindows = bpy.data.objects['FensterMid']
             objWindows.name = 'FensterMid' + str(_iteration)
+            #mat = bpy.data.materials.new(name="Fenster")
+            #objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -170,6 +179,8 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'midbalk' + str(_iteration)
             objWindows = bpy.data.objects['FensterMidBalk']
             objWindows.name = 'FensterMidBalk' + str(_iteration)
+            #mat = bpy.data.materials.new(name="Fenster")
+            #objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
