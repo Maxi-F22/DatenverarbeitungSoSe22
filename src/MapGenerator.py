@@ -77,8 +77,9 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'downOne' + str(_iteration)
             objWindows = bpy.data.objects['FensterDownOne']
             objWindows.name = 'FensterDownOne' + str(_iteration)
-            #mat = bpy.data.materials.new(name="Fenster")
-            #objWindows.data.materials.append(mat)
+
+            mat = bpy.data.materials.get('Licht_Fenster')
+            objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -104,8 +105,9 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'downTwo' + str(_iteration)
             objWindows = bpy.data.objects['FensterDownTwo']
             objWindows.name = 'FensterDownTwo' + str(_iteration)
-            #mat = bpy.data.materials.new(name="Fenster")
-            #objWindows.data.materials.append(mat)
+
+            mat = bpy.data.materials.get('Licht_Fenster')
+            objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -152,8 +154,9 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'mid' + str(_iteration)
             objWindows = bpy.data.objects['FensterMid']
             objWindows.name = 'FensterMid' + str(_iteration)
-            #mat = bpy.data.materials.new(name="Fenster")
-            #objWindows.data.materials.append(mat)
+
+            mat = bpy.data.materials.get('Licht_Fenster')
+            objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -179,8 +182,9 @@ def createHouse(_coordX, _coordY, _iteration):
             obj.name = 'midbalk' + str(_iteration)
             objWindows = bpy.data.objects['FensterMidBalk']
             objWindows.name = 'FensterMidBalk' + str(_iteration)
-            #mat = bpy.data.materials.new(name="Fenster")
-            #objWindows.data.materials.append(mat)
+
+            mat = bpy.data.materials.get('Licht_Fenster')
+            objWindows.data.materials.append(mat)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -311,6 +315,39 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
         createHouse(x, -y, a)
         a += 1
 
+def createWindowMaterialDay():
+    #Create the normal blue Window color
+    material = bpy.data.materials.new(name='Fenster')
+    material.use_nodes=True
+    material.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value=(0.211,0.629,0.636,1.0)
+
+def createWindowMaterialNight():
+    # Create the material for the night version 
+    material = bpy.data.materials.new(name='Licht_Fenster')
+    material.use_nodes=True
+
+    #Delete Principled BSDF
+    mat = bpy.data.materials['Licht_Fenster']
+    node_to_delete =  mat.node_tree.nodes['Principled BSDF']
+    mat.node_tree.nodes.remove( node_to_delete )
+
+    #Add Emission Shader
+    emission_Node = mat.node_tree.nodes.new('ShaderNodeEmission')
+    emission_Node.location = (0,320)
+
+    #Add right values to the shader
+    emission_Node.inputs[0].default_value = (1.0,0.534,0.029,1.0)
+    emission_Node.inputs[1].default_value = 4.0
+    
+    #Conect nodes
+    shaderOutput = mat.node_tree.nodes.get('Material Output')
+    mat.node_tree.links.new(emission_Node.outputs[0], shaderOutput.inputs[0] )
+    
+    #Configure scene settings 
+    eeveeObj = bpy.data.scenes['Scene'].eevee
+    eeveeObj.use_bloom = True
+    eeveeObj.bloom_color = (1.0,0.425,0.006)
+    eeveeObj.bloom_intensity = 0.5
 
 def main(_osmfile):
     ml = 300
@@ -332,6 +369,9 @@ def main(_osmfile):
     bpy.ops.outliner.orphans_purge() # löscht überbleibende Meshdaten etc.
     for col in bpy.data.collections:
         bpy.data.collections.remove(col)
+
+    createWindowMaterialDay()
+    createWindowMaterialNight()
 
     map(ml, mw, lats, latn, lonw, lone, buildings, forests)
 

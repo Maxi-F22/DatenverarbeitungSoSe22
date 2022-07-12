@@ -35,6 +35,12 @@ def createWindowMaterialNight():
     eeveeObj.bloom_color = (1.0,0.425,0.006)
     eeveeObj.bloom_intensity = 0.5
 
+
+
+def checkDayAndNight():
+    dayNight = True
+    if(dayNight==True):
+        print("Hello")
   
     
     
