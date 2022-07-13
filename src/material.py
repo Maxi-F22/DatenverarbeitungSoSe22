@@ -35,6 +35,8 @@ def createWindowMaterialNight():
     eeveeObj.bloom_color = (1.0,0.425,0.006)
     eeveeObj.bloom_intensity = 0.5
 
+def addWorldSun():
+    print("Hallo i bims eine Sonne")
 
 def checkDayAndNight(objWindows):
     dayNightSet = False
