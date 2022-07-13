@@ -8,16 +8,18 @@ import bpy
 
 wkbfab = o.geom.WKBFactory()
 
-#OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
-#ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/allAssets.blend'
+OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
+ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/allAssets.blend'
+STREET_ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/street.blend'
 
-OSM_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
-ASSETS_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/allAssets.blend'
+# OSM_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
+# ASSETS_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/allAssets.blend'
 
 class BuildingListHandler(o.SimpleHandler):
 
     buildings = []
     forests = []
+    streets = []
 
     def area(self, a):
         if 'building' in a.tags:
@@ -36,6 +38,17 @@ class BuildingListHandler(o.SimpleHandler):
                 for point_coord in coord:
                     coords.append({"lat": point_coord[1], "lng": point_coord[0]})
             self.forests.append({"center": (centroid.x, centroid.y, 0), "coords": coords})
+
+    def way(self, w):
+        if 'highway' in w.tags:
+            wkb = wkbfab.create_linestring(w)
+            poly = wkblib.loads(wkb, hex=True)
+            bound = poly.coords
+            coords = []
+            for coord in list(bound):
+                coords.append({"lat": coord[1], "lng": coord[0]})
+            self.streets.append(coords)
+
         
 
 def createHouse(_coordX, _coordY, _iteration):
@@ -237,6 +250,75 @@ def createHouse(_coordX, _coordY, _iteration):
                 coll.objects.unlink(obj)
             collection.objects.link(obj)
 
+def createForest():
+    file_path = ASSETS_PATH
+    inner_path = 'Object'
+    bpy.ops.wm.append(
+        filepath=os.path.join(file_path, inner_path, 'Cube'),
+        directory=os.path.join(file_path, inner_path),
+        filename='Cube'
+    )
+    bpy.ops.wm.append(
+        filepath=os.path.join(file_path, inner_path, 'TreeTwo'),
+        directory=os.path.join(file_path, inner_path),
+        filename='TreeTwo'
+    )
+    bpy.ops.wm.append(
+        filepath=os.path.join(file_path, inner_path, 'TreeThree'),
+        directory=os.path.join(file_path, inner_path),
+        filename='TreeThree'
+    )
+    obj = bpy.data.objects['Cube']
+    for coll in obj.users_collection:
+        # Unlink the object
+        coll.objects.unlink(obj)
+    obj = bpy.data.objects['TreeTwo']
+    for coll in obj.users_collection:
+        # Unlink the object
+        coll.objects.unlink(obj)
+    obj = bpy.data.objects['TreeThree']
+    for coll in obj.users_collection:
+        # Unlink the object
+        coll.objects.unlink(obj)
+
+    forest_collection = bpy.data.collections.get("Forests")
+        
+    if forest_collection:
+        forest_objects = []
+        for obj in forest_collection.objects:
+            if obj.type == 'MESH':
+                forest_objects.append(obj)
+        ctx = bpy.context.copy()
+        ctx['active_object'] = forest_objects[0]
+        ctx['selected_editable_objects'] = forest_objects
+        bpy.ops.object.join(ctx)
+
+    if bpy.data.objects["forest0"]:
+        forest_obj = bpy.data.objects["forest0"]
+        forest_obj.modifiers.new("forestTreeOneParticles", type='PARTICLE_SYSTEM')
+        forest_obj.modifiers.new("forestTreeTwoParticles", type='PARTICLE_SYSTEM')
+        forest_obj.modifiers.new("forestTreeThreeParticles", type='PARTICLE_SYSTEM')
+        forest_obj.show_instancer_for_render = False
+        forest_obj.show_instancer_for_viewport = False
+
+        for i in range(3):
+            partTree = forest_obj.particle_systems[i]
+            partTree.seed = random.randrange(1,100)
+            settingsTree = partTree.settings
+            settingsTree.particle_size = 0.3
+            settingsTree.size_random = 0.1
+            settingsTree.count = 2000
+            settingsTree.type = 'HAIR'
+            settingsTree.render_type = 'OBJECT'
+            settingsTree.use_rotations = True
+            settingsTree.rotation_mode = 'NONE'
+            if i == 0:
+                settingsTree.instance_object = bpy.data.objects["Cube"]
+            elif i == 1:
+                settingsTree.instance_object = bpy.data.objects["TreeTwo"]
+            elif i == 2:
+                settingsTree.instance_object = bpy.data.objects["TreeThree"]
+
 def createFloor(_length, _width):
     bpy.ops.mesh.primitive_plane_add(size=1)
     obj = bpy.data.objects['Plane']
@@ -250,26 +332,18 @@ def createFloor(_length, _width):
 
     obj.data.materials.append(mat_floor)
 
-def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buildings, _forests):
+def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buildings, _forests, _streets):
     lat_calc = (_mapLength) / (_latNorth - _latSouth)
     long_calc = (_mapWidth) / -((_longWest - _longEast))
     a = 0
     a_forest = 0
+    a_streets = 0
     createFloor(_mapLength + 100, _mapWidth + 100)
 
-    file_path = ASSETS_PATH
-    inner_path = 'Object'
-    object_name = 'TreeTwo'
-
-    bpy.ops.wm.append(
-        filepath=os.path.join(file_path, inner_path, object_name),
-        directory=os.path.join(file_path, inner_path),
-        filename=object_name
-    )
-    obj = bpy.data.objects['TreeTwo']
-    for coll in obj.users_collection:
-        # Unlink the object
-        coll.objects.unlink(obj)
+    forest_collection = bpy.data.collections.new("Forests")
+    bpy.context.scene.collection.children.link(forest_collection)
+    street_collection = bpy.data.collections.new("aStreets")
+    bpy.context.scene.collection.children.link(street_collection)
 
     while a_forest < len(_forests):
         forest_verts = []
@@ -280,32 +354,17 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
             y_forest = long_calc * along_forest
             forest_verts.append((x_forest, -y_forest, 0))
 
-        edges = [[i, i+1] for i in range(len(forest_verts)-1)]
         faces = [[i for i in range(len(forest_verts)-1)]]
 
         mesh = bpy.data.meshes.new("forest" + str(a_forest))
-        mesh.from_pydata(forest_verts, edges, faces)
+        mesh.from_pydata(vertices=forest_verts, edges=[], faces=faces)
         mesh.update()
 
         obj = bpy.data.objects.new("forest" + str(a_forest), mesh)
-
-        obj.modifiers.new("forestParticles" + str(a_forest), type='PARTICLE_SYSTEM')
-        part = obj.particle_systems[0]
-        settings = part.settings
-        settings.name = "forestParticlesSettings" + str(a_forest)
-        settings.particle_size = 0.25
-        settings.size_random = 0.1
-        settings.count = 100
-        settings.type = 'HAIR'
-        settings.render_type = 'OBJECT'
-        settings.use_rotations = True
-        settings.rotation_mode = 'NONE'
-        settings.instance_object = bpy.data.objects["TreeTwo"]
-
-        bpy.context.scene.collection.objects.link(obj)
+        forest_collection.objects.link(obj)
 
         a_forest += 1
-
+  
     # while a < len(_buildings):
     while a < 20:
         alat = float(_buildings[a]["lat"]) - _latSouth
@@ -314,6 +373,70 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
         y = long_calc * along
         createHouse(x, -y, a)
         a += 1
+
+    while a_streets < len(_streets):
+        street_verts = []
+
+        for street in _streets[a_streets]:
+            alat_street = float(street["lat"]) - _latSouth
+            along_street = float(street["lng"]) - _longWest
+            x_street = lat_calc * alat_street
+            y_street = long_calc * along_street
+            street_verts.append((x_street, -y_street, 0))
+
+        createStreet(street_verts, a_streets)
+        
+        a_streets += 1
+
+    createForest()
+
+
+
+
+def createStreet(_verts, _iteration):
+    bpy.ops.wm.append(
+        filepath=os.path.join(STREET_ASSETS_PATH, 'Object', 'StreetPart'),
+        directory=os.path.join(STREET_ASSETS_PATH, 'Object'),
+        filename='StreetPart'
+    )
+    street_collection = bpy.data.collections.get("aStreets")
+    
+    obj = bpy.data.objects['StreetPart']
+    obj.name = 'StreetPart' + str(_iteration)
+
+    for coll in obj.users_collection:
+        # Unlink the object
+        coll.objects.unlink(obj)
+    street_collection.objects.link(obj)
+
+    curveData = bpy.data.curves.new('streetCurve' + str(_iteration), type='CURVE')
+    curveData.dimensions = '3D'
+    curveData.resolution_u = 2
+    # map coords to spline
+    polyline = curveData.splines.new('POLY')
+    polyline.points.add(len(_verts)-1)
+    for i, coord in enumerate(_verts):
+        x,y,z = coord
+        polyline.points[i].co = (x, y, z, 1)
+    # create Object
+    curveObj = bpy.data.objects.new('street' + str(_iteration), curveData)
+    curveData.bevel_depth = 0.01
+
+    # add modifiers to align and multiply StreetPart to Street
+    obj.modifiers.new('StreetPartArray' + str(_iteration), type='ARRAY')
+    obj.modifiers['StreetPartArray' + str(_iteration)].fit_type = 'FIT_CURVE'
+    obj.modifiers['StreetPartArray' + str(_iteration)].curve = curveObj
+    obj.modifiers.new('StreetPartCurve' + str(_iteration), type='CURVE')
+    obj.modifiers['StreetPartCurve' + str(_iteration)].object = curveObj
+
+
+
+
+    # attach to collection
+    street_collection.objects.link(curveObj)
+
+
+
 
 def createWindowMaterialDay():
     #Create the normal blue Window color
@@ -328,8 +451,13 @@ def createWindowMaterialNight():
 
     #Delete Principled BSDF
     mat = bpy.data.materials['Licht_Fenster']
-    node_to_delete =  mat.node_tree.nodes['Principled BSDF']
-    mat.node_tree.nodes.remove( node_to_delete )
+    try: 
+        mat.node_tree.nodes['Principled BSDF']
+    except:
+        pass
+    else:
+        node_to_delete =  mat.node_tree.nodes['Principled BSDF']
+        mat.node_tree.nodes.remove( node_to_delete )
 
     #Add Emission Shader
     emission_Node = mat.node_tree.nodes.new('ShaderNodeEmission')
@@ -350,18 +478,18 @@ def createWindowMaterialNight():
     eeveeObj.bloom_intensity = 0.5
 
 def checkDayAndNight(objWindows):
-    dayNightSet = True
+    dayNightSet = False
     #Check if user set checkbox for the day or night time
     if(dayNightSet==False):
-         mat = bpy.data.materials.get('Fenster')
-         objWindows.data.materials.append(mat)
+        mat = bpy.data.materials.get('Fenster')
+        objWindows.data.materials.append(mat)
         #Sonne an Tageszeit anpassen
         
 
     elif(dayNightSet==True):
-         mat = bpy.data.materials.get('Licht_Fenster')
-         objWindows.data.materials.append(mat)
-         #Sonne an Tageszeit anpassen
+        mat = bpy.data.materials.get('Licht_Fenster')
+        objWindows.data.materials.append(mat)
+        #Sonne an Tageszeit anpassen
     
 def main(_osmfile):
     ml = 300
@@ -377,6 +505,7 @@ def main(_osmfile):
 
     buildings = handler.buildings
     forests = handler.forests
+    streets = handler.streets
 
     bpy.ops.object.select_all(action='SELECT') # selektiert alle Objekte
     bpy.ops.object.delete(use_global=False, confirm=False) # löscht selektierte objekte
@@ -387,7 +516,7 @@ def main(_osmfile):
     createWindowMaterialDay()
     createWindowMaterialNight()
 
-    map(ml, mw, lats, latn, lonw, lone, buildings, forests)
+    map(ml, mw, lats, latn, lonw, lone, buildings, forests, streets)
 
 if __name__ == '__main__':
     main(OSM_PATH)
