@@ -78,8 +78,7 @@ def createHouse(_coordX, _coordY, _iteration):
             objWindows = bpy.data.objects['FensterDownOne']
             objWindows.name = 'FensterDownOne' + str(_iteration)
 
-            mat = bpy.data.materials.get('Licht_Fenster')
-            objWindows.data.materials.append(mat)
+            checkDayAndNight(objWindows)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -106,8 +105,7 @@ def createHouse(_coordX, _coordY, _iteration):
             objWindows = bpy.data.objects['FensterDownTwo']
             objWindows.name = 'FensterDownTwo' + str(_iteration)
 
-            mat = bpy.data.materials.get('Licht_Fenster')
-            objWindows.data.materials.append(mat)
+            checkDayAndNight(objWindows)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -155,8 +153,7 @@ def createHouse(_coordX, _coordY, _iteration):
             objWindows = bpy.data.objects['FensterMid']
             objWindows.name = 'FensterMid' + str(_iteration)
 
-            mat = bpy.data.materials.get('Licht_Fenster')
-            objWindows.data.materials.append(mat)
+            checkDayAndNight(objWindows)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -183,8 +180,7 @@ def createHouse(_coordX, _coordY, _iteration):
             objWindows = bpy.data.objects['FensterMidBalk']
             objWindows.name = 'FensterMidBalk' + str(_iteration)
 
-            mat = bpy.data.materials.get('Licht_Fenster')
-            objWindows.data.materials.append(mat)
+            checkDayAndNight(objWindows)
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -349,6 +345,18 @@ def createWindowMaterialNight():
     eeveeObj.bloom_color = (1.0,0.425,0.006)
     eeveeObj.bloom_intensity = 0.5
 
+def checkDayAndNight(objWindows):
+    dayNightSet = True
+    if(dayNightSet==False):
+         mat = bpy.data.materials.get('Fenster')
+         objWindows.data.materials.append(mat)
+        #Sonne an Tageszeit anpassen
+
+    elif(dayNightSet==True):
+         mat = bpy.data.materials.get('Licht_Fenster')
+         objWindows.data.materials.append(mat)
+         #Sonne an Tageszeit anpassen
+    
 def main(_osmfile):
     ml = 300
     lats = 48.0489500
