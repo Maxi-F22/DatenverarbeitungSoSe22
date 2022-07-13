@@ -1,4 +1,5 @@
 import bpy
+from math import radians
 
 def createWindowMaterialDay():
     #Create the normal blue Window color
@@ -36,18 +37,53 @@ def createWindowMaterialNight():
     eeveeObj.bloom_intensity = 0.5
 
 def addWorldSun():
-    print("Hallo i bims eine Sonne")
+    # create light and set attributes
+    sun_data = bpy.data.lights.new(name="Sonne", type='SUN')
+    sun_data.energy = 1
+
+    # create new object with the sun 
+    sonne = bpy.data.objects.new(name="Sonne", object_data=sun_data)
+
+    # link light object
+    bpy.context.collection.objects.link(sonne)
+
+    # make it active 
+    bpy.context.view_layer.objects.active = sonne
+
+    #change location and rotation
+    sonne.location = (-39, -284, 40)
+    sonne.rotation_euler[0]= radians(-19)
+    sonne.rotation_euler[1]= radians(-43)
+    sonne.rotation_euler[2]= radians(8)
 
 def checkDayAndNight(objWindows):
     dayNightSet = False
     if(dayNightSet==False):
-         mat = bpy.data.materials.get('Fenster')
-         objWindows.data.materials.append(mat)
-        #Sonne an Tageszeit anpassen
+        #set window material 
+        mat = bpy.data.materials.get('Fenster')
+        objWindows.data.materials.append(mat)
+        
+        #change the color of the sun to night
+        sonne = bpy.data.lights.get('Sonne')
+        sonne.color = (0.124,0.097,1.0)
+
+        #change world background-color
+        bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (0.078,0.324,0.163,1)
 
     elif(dayNightSet==True):
-         mat = bpy.data.materials.get('Licht_Fenster')
-         objWindows.data.materials.append(mat)
-         #Sonne an Tageszeit anpassen
+        #set window material 
+        mat = bpy.data.materials.get('Licht_Fenster')
+        objWindows.data.materials.append(mat)
+
+        #change the color of the sun to night
+        sonne = bpy.data.lights.get('Sonne')
+        sonne.color = (0.653,0.642,0.298)
+
+        #change world background-color
+        bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (0,0,0,1)
+
+         
+
+
     
    
