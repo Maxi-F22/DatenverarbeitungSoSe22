@@ -64,6 +64,7 @@ def createHouse(_coordX, _coordY, _iteration):
     #Select bottom part for the new asset. 
     match SELECT_BOT:
         case 1:
+            #load the first part of the house
             file_path = ASSETS_PATH
             inner_path = 'Object'
             object_name = 'FensterDownOne'
@@ -73,12 +74,15 @@ def createHouse(_coordX, _coordY, _iteration):
                 directory=os.path.join(file_path, inner_path),
                 filename=object_name
             )
+            #rename the object 
             obj = bpy.data.objects['downOne']
             obj.name = 'downOne' + str(_iteration)
             objWindows = bpy.data.objects['FensterDownOne']
             objWindows.name = 'FensterDownOne' + str(_iteration)
 
+            #set the right window material for the choosen Time
             checkDayAndNight(objWindows)
+            #add random rotation and the right position. 
             obj.rotation_euler[2] = radians(SELECT_ROT)
             obj.location[0] = _coordX
             obj.location[1] = _coordY
@@ -347,10 +351,12 @@ def createWindowMaterialNight():
 
 def checkDayAndNight(objWindows):
     dayNightSet = True
+    #Check if user set checkbox for the day or night time
     if(dayNightSet==False):
          mat = bpy.data.materials.get('Fenster')
          objWindows.data.materials.append(mat)
         #Sonne an Tageszeit anpassen
+        
 
     elif(dayNightSet==True):
          mat = bpy.data.materials.get('Licht_Fenster')
