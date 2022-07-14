@@ -1,5 +1,6 @@
 import bpy
 from math import radians
+import bmesh
 
 def createWindowMaterialDay():
     #Create the normal blue Window color
@@ -82,8 +83,85 @@ def checkDayAndNight(objWindows):
         #change world background-color
         bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (0,0,0,1)
 
-         
+
+def createEpoxyMap():
+    setEpoxy = False
+    if(setEpoxy==False):
+        print("Epoxy version wurde nicht ausgewähl. Das Modell wird ohne Epoxy-Erweiterung erstellt.")
+    elif(setEpoxy==True):
+        print("Das Model wurde in ein Epoxy-Modell wurde in ein Epoxy-Harz modell umgewandelt.")
+        #extrude ground 
+        #all faces 
+        
+        #create epoxy material
+        material = bpy.data.materials.new(name='Acryl')
+        material.use_nodes=True
+        mat = bpy.data.materials['Acryl']
+
+        #remove link from Principled BSDF
+        try: 
+            mat.node_tree.nodes['Principled BSDF'].outputs['BSDF'].links[0]
+        except:
+            pass
+        else:
+            link = mat.node_tree.nodes['Principled BSDF'].outputs['BSDF'].links[0]
+            mat.node_tree.links.remove(link)
+
+        #add the right settings for Principled BSDF
+        bsdf = mat.node_tree.nodes.get('Principled BSDF')
+        bsdf.inputs[9].default_value = 0.0
+        bsdf.inputs[17].default_value = 1.0
+        bsdf.location = (0,0)
+
+        #add Mix Shader & connect with Material Output
+        mixed_Node = mat.node_tree.nodes.new('ShaderNodeMixShader')
+        mixed_Node.location = (800,-300)
+        shaderOutput = mat.node_tree.nodes.get('Material Output')
+        shaderOutput.location = (1000,0)
+        mat.node_tree.links.new(mixed_Node.outputs[0], shaderOutput.inputs[0] )
+
+        #connect Principled BSDF with Mix Shader
+        mat.node_tree.links.new(bsdf.outputs[0], mixed_Node.inputs[2] )
+
+        #add Transparent BSDF & connect with Mix Shader
+        transparent_Node = mat.node_tree.nodes.new('ShaderNodeBsdfTransparent')
+        transparent_Node.location = (0,100)
+        mat.node_tree.links.new(transparent_Node.outputs[0], mixed_Node.inputs[1] )
+
+        #add Frensel
+        fresnel_Node = mat.node_tree.nodes.new('ShaderNodeFresnel')
+        fresnel_Node.location = (0,230)
+
+        #add Color Ramp
+        colorRamp_Node = mat.node_tree.nodes.new('ShaderNodeValToRGB') 
+        colorRamp_Node.location = (200,300)
+
+        # conect Frensel with Color Ramp & Color Ramp with Mix Shader
+        mat.node_tree.links.new(fresnel_Node.outputs[0], colorRamp_Node.inputs[0] )
+        mat.node_tree.links.new(colorRamp_Node.outputs[0], mixed_Node.inputs[0] )
+
+        #set diffrent settings 
+        mat.use_screen_refraction = True
+        mat.blend_method = ("HASHED")
+        mat.shadow_method = ("HASHED")
+        bpy.data.scenes["Scene"].eevee.use_ssr = True
+        bpy.data.scenes["Scene"].eevee.use_ssr_refraction = True
+        
+        #add cube and apply epoxy material 
+        bpy.ops.mesh.primitive_cube_add()
+        cube = bpy.context.selected_objects[0]
+        cube.name = "GlasCube"
+        cubeMat = bpy.data.objects["GlasCube"]
+        cubeMat.data.materials.append(mat)
+
+        #move and sccale the cube to the right size
+        cubeMat.location = (200, -400, 0)
+        cubeMat.scale[0] = 200
+        cubeMat.scale[1] = 400
+        cubeMat.scale[2] = 81
 
 
+        
+        
     
    
