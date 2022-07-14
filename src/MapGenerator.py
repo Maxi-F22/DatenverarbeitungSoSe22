@@ -8,7 +8,7 @@ import bpy
 
 wkbfab = o.geom.WKBFactory()
 
-OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/furtwangen2.osm'
+OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/furtwangen.osm'
 ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/allAssets.blend'
 
 # OSM_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
@@ -510,13 +510,13 @@ def createWindowMaterialNight():
     eeveeObj.bloom_color = (1.0,0.425,0.006)
     eeveeObj.bloom_intensity = 0.5
 
-def checkDayAndNight(objWindows):
+def checkDayAndNight(_objWindows):
     dayNightSet = False
     #Check if user set checkbox for the day or night time
     if(dayNightSet==False):
         #set window material 
         mat = bpy.data.materials.get('Fenster')
-        objWindows.data.materials.append(mat)
+        _objWindows.data.materials.append(mat)
         
         #change the color of the sun to night
         sonne = bpy.data.lights.get('Sonne')
@@ -528,7 +528,7 @@ def checkDayAndNight(objWindows):
     elif(dayNightSet==True):
         #set window material 
         mat = bpy.data.materials.get('Licht_Fenster')
-        objWindows.data.materials.append(mat)
+        _objWindows.data.materials.append(mat)
 
         #change the color of the sun to night
         sonne = bpy.data.lights.get('Sonne')
@@ -556,6 +556,81 @@ def addWorldSun():
     sonne.rotation_euler[0]= radians(-19)
     sonne.rotation_euler[1]= radians(-43)
     sonne.rotation_euler[2]= radians(8)
+
+    
+def createEpoxy(_length, _width):
+    setEpoxy = True
+    if(setEpoxy==False):
+        print("Epoxy Version wurde nicht ausgewählt. Das Modell wird ohne Epoxy-Erweiterung erstellt.")
+    elif(setEpoxy==True):
+        print("Das Model wurde in ein Epoxit-Harz-Modell umgewandelt.")
+        
+        #create epoxy material
+        material = bpy.data.materials.new(name='Acryl')
+        material.use_nodes=True
+        mat = bpy.data.materials['Acryl']
+
+        #remove link from Principled BSDF
+        try: 
+            mat.node_tree.nodes['Principled BSDF'].outputs['BSDF'].links[0]
+        except:
+            pass
+        else:
+            link = mat.node_tree.nodes['Principled BSDF'].outputs['BSDF'].links[0]
+            mat.node_tree.links.remove(link)
+
+        #add the right settings for Principled BSDF
+        bsdf = mat.node_tree.nodes.get('Principled BSDF')
+        bsdf.inputs[9].default_value = 0.0
+        bsdf.inputs[17].default_value = 1.0
+        bsdf.location = (0,0)
+
+        #add Mix Shader & connect with Material Output
+        mixed_Node = mat.node_tree.nodes.new('ShaderNodeMixShader')
+        mixed_Node.location = (800,-300)
+        shaderOutput = mat.node_tree.nodes.get('Material Output')
+        shaderOutput.location = (1000,0)
+        mat.node_tree.links.new(mixed_Node.outputs[0], shaderOutput.inputs[0] )
+
+        #connect Principled BSDF with Mix Shader
+        mat.node_tree.links.new(bsdf.outputs[0], mixed_Node.inputs[2] )
+
+        #add Transparent BSDF & connect with Mix Shader
+        transparent_Node = mat.node_tree.nodes.new('ShaderNodeBsdfTransparent')
+        transparent_Node.location = (0,100)
+        mat.node_tree.links.new(transparent_Node.outputs[0], mixed_Node.inputs[1] )
+
+        #add Frensel
+        fresnel_Node = mat.node_tree.nodes.new('ShaderNodeFresnel')
+        fresnel_Node.location = (0,230)
+
+        #add Color Ramp
+        colorRamp_Node = mat.node_tree.nodes.new('ShaderNodeValToRGB') 
+        colorRamp_Node.location = (200,300)
+
+        # conect Frensel with Color Ramp & Color Ramp with Mix Shader
+        mat.node_tree.links.new(fresnel_Node.outputs[0], colorRamp_Node.inputs[0] )
+        mat.node_tree.links.new(colorRamp_Node.outputs[0], mixed_Node.inputs[0] )
+
+        #set diffrent settings 
+        mat.use_screen_refraction = True
+        mat.blend_method = ("HASHED")
+        mat.shadow_method = ("HASHED")
+        bpy.data.scenes["Scene"].eevee.use_ssr = True
+        bpy.data.scenes["Scene"].eevee.use_ssr_refraction = True
+        
+        #add cube and apply epoxy material 
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        objCube = bpy.data.objects['Cube']
+        objCube.name = "GlasCube"
+        objCube.data.materials.append(mat)
+
+        #move and sccale the cube to the right size
+        objCube.location = (_length / 2, - (_width / 2), 40)
+        objCube.scale[0] = _length
+        objCube.scale[1] = _width
+        objCube.scale[2] = 90
+
     
 def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buildings, _forests, _streets):
     lat_calc = (_mapLength) / (_latNorth - _latSouth)
@@ -564,6 +639,7 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
     a_forest = 0
     a_streets = 0
     createFloor(_mapLength + 100, _mapWidth + 100)
+    createEpoxy(_mapLength + 100, _mapWidth + 100)
 
     forest_collection = bpy.data.collections.new("Forests")
     bpy.context.scene.collection.children.link(forest_collection)
