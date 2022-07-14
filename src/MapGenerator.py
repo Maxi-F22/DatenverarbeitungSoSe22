@@ -10,11 +10,9 @@ wkbfab = o.geom.WKBFactory()
 
 OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/furtwangen2.osm'
 ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/allAssets.blend'
-STREET_ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/street.blend'
 
 # OSM_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
 # ASSETS_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/allAssets.blend'
-# STREET_ASSETS_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/street.blend'
 
 class BuildingListHandler(o.SimpleHandler):
     # get bound coords of whole map
@@ -262,14 +260,17 @@ def createHouse(_coordX, _coordY, _iteration):
                 coll.objects.unlink(obj)
             collection.objects.link(obj)
 
-def createForest():
+def createForest(_length, _width):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(_length / 2, -(_width / 2), 45), scale=(_length - 10, _width - 10, 100))
+    obj = bpy.data.objects['Cube']
+    obj.name = "BoundingBox"
     cube_obj = bpy.data.objects['BoundingBox']
     file_path = ASSETS_PATH
     inner_path = 'Object'
     bpy.ops.wm.append(
-        filepath=os.path.join(file_path, inner_path, 'Cube'),
+        filepath=os.path.join(file_path, inner_path, 'TreeOne'),
         directory=os.path.join(file_path, inner_path),
-        filename='Cube'
+        filename='TreeOne'
     )
     bpy.ops.wm.append(
         filepath=os.path.join(file_path, inner_path, 'TreeTwo'),
@@ -281,7 +282,7 @@ def createForest():
         directory=os.path.join(file_path, inner_path),
         filename='TreeThree'
     )
-    obj = bpy.data.objects['Cube']
+    obj = bpy.data.objects['TreeOne']
     for coll in obj.users_collection:
         # Unlink the object
         coll.objects.unlink(obj)
@@ -320,17 +321,19 @@ def createForest():
 
             for i in range(3):
                 partTree = forest_obj.particle_systems[i]
-                partTree.seed = random.randrange(1,100)
+                partTree.seed = random.randrange(1,101)
                 settingsTree = partTree.settings
                 settingsTree.particle_size = 0.3
                 settingsTree.size_random = 0.1
-                settingsTree.count = 800
+                settingsTree.count = 400
                 settingsTree.type = 'HAIR'
                 settingsTree.render_type = 'OBJECT'
                 settingsTree.use_rotations = True
-                settingsTree.rotation_mode = 'NONE'
+                settingsTree.rotation_mode = 'OB_Z'
+                settingsTree.phase_factor_random = 2
+                settingsTree.distribution = 'RAND'
                 if i == 0:
-                    settingsTree.instance_object = bpy.data.objects["Cube"]
+                    settingsTree.instance_object = bpy.data.objects["TreeOne"]
                 elif i == 1:
                     settingsTree.instance_object = bpy.data.objects["TreeTwo"]
                 elif i == 2:
@@ -342,7 +345,6 @@ def createForest():
             forest_obj.modifiers['forestBoolean'].operation = 'INTERSECT'
             bpy.context.view_layer.objects.active = forest_obj
             bpy.ops.object.modifier_apply(modifier="forestBoolean")
-            bpy.context.view_layer.objects.active = None
 
     for coll in cube_obj.users_collection:
         # Unlink the object
@@ -351,21 +353,53 @@ def createForest():
 
 def createFloor(_length, _width):
     bpy.ops.mesh.primitive_plane_add(size=1)
-    obj = bpy.data.objects['Plane']
-    obj.scale = (_length, _width, 1)
-    obj.location = (_length / 2, - (_width / 2), 0)
+    objFloorPlane = bpy.data.objects['Plane']
+    objFloorPlane.name = "FloorPlane"
+    objFloorPlane.scale = (_length, _width, 1)
+    objFloorPlane.location = (_length / 2, - (_width / 2), 0)
+
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(_length / 2, -(_width / 2), -2.5), scale=(_length, _width, 5))
+    obj = bpy.data.objects['Cube']
+    obj.name = "Floor"
 
     mat_floor = bpy.data.materials.new("Floor Material")
     mat_floor.use_nodes = True
     nodes_floor = mat_floor.node_tree.nodes
-    nodes_floor["Principled BSDF"].inputs[0].default_value = [0, 0.3, 0, 1]
+    nodes_floor["Principled BSDF"].inputs[0].default_value = [0.01498, 0.238117, 0.015376, 1]
+    mat_ground = bpy.data.materials.new("Ground Material")
+    mat_ground.use_nodes = True
+    nodes_ground = mat_ground.node_tree.nodes
+    nodes_ground["Principled BSDF"].inputs[0].default_value = [0.096283, 0.051237, 0.001711, 1]
 
-    obj.data.materials.append(mat_floor)
+    objFloorPlane.data.materials.append(mat_floor)
+    obj.data.materials.append(mat_ground)
 
-def createBoundingBox(_length, _width):
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(_length / 2, -(_width / 2), 45), scale=(_length, _width, 100))
-    obj = bpy.data.objects['Cube']
-    obj.name = "BoundingBox"
+    file_path = ASSETS_PATH
+    inner_path = 'Object'
+    bpy.ops.wm.append(
+        filepath=os.path.join(file_path, inner_path, 'Grass'),
+        directory=os.path.join(file_path, inner_path),
+        filename='Grass'
+    )
+    objGrass = bpy.data.objects['Grass']
+    for coll in obj.users_collection:
+        # Unlink the object
+        coll.objects.unlink(objGrass)
+    objFloorPlane.modifiers.new("grassShrubParticles", type='PARTICLE_SYSTEM')
+
+    partGrass = objFloorPlane.particle_systems[0]
+    partGrass.seed = random.randrange(1,101)
+    settingsGrass = partGrass.settings
+    settingsGrass.particle_size = 2
+    settingsGrass.size_random = 0.2
+    settingsGrass.count = 3000
+    settingsGrass.type = 'HAIR'
+    settingsGrass.render_type = 'OBJECT'
+    settingsGrass.use_rotations = True
+    settingsGrass.rotation_mode = 'OB_Z'
+    settingsGrass.phase_factor_random = 2
+
+    settingsGrass.instance_object = objGrass
 
 def createStreet(_verts, _width, _height, _iteration):
     curveData = bpy.data.curves.new('streetCurve' + str(_iteration), type='CURVE')
@@ -386,8 +420,8 @@ def createStreet(_verts, _width, _height, _iteration):
     if len(polyline.points) > 2:
         
         bpy.ops.wm.append(
-            filepath=os.path.join(STREET_ASSETS_PATH, 'Object', 'StreetPart'),
-            directory=os.path.join(STREET_ASSETS_PATH, 'Object'),
+            filepath=os.path.join(ASSETS_PATH, 'Object', 'StreetPart'),
+            directory=os.path.join(ASSETS_PATH, 'Object'),
             filename='StreetPart'
         )
         street_collection = bpy.data.collections.get("Streets")
@@ -434,6 +468,7 @@ def createStreet(_verts, _width, _height, _iteration):
         objWagon.location.x = x
         objWagon.location.y = y
         objWagon.location.z = 0.8
+        objWagon.rotation_euler[2] = radians(random.randrange(0, 361))
 
 
 def createWindowMaterialDay():
@@ -529,7 +564,6 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
     a_forest = 0
     a_streets = 0
     createFloor(_mapLength + 100, _mapWidth + 100)
-    createBoundingBox(_mapLength + 100, _mapWidth + 100)
 
     forest_collection = bpy.data.collections.new("Forests")
     bpy.context.scene.collection.children.link(forest_collection)
@@ -579,7 +613,7 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
         
         a_streets += 1
 
-    createForest()
+    createForest(_mapLength + 100, _mapWidth + 100)
 
 def main(_osmfile):
     handler = BuildingListHandler()
