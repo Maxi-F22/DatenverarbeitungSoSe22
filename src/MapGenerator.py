@@ -8,7 +8,7 @@ import bpy
 
 wkbfab = o.geom.WKBFactory()
 
-OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
+OSM_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/furtwangen2.osm'
 ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/allAssets.blend'
 STREET_ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/DatenverarbeitungSoSe22/Assets/street.blend'
 
@@ -39,15 +39,19 @@ class BuildingListHandler(o.SimpleHandler):
             self.buildings.append({"lat": centroid.y, "lng": centroid.x})
         
         elif 'natural' or 'landuse' in a.tags:
-            wkb = wkbfab.create_multipolygon(a)
-            poly = wkblib.loads(wkb, hex=True)
-            bound = poly.boundary
-            centroid = poly.centroid
-            coords = []
-            for coord in mapping(bound)["coordinates"]:
-                for point_coord in coord:
-                    coords.append({"lat": point_coord[1], "lng": point_coord[0]})
-            self.forests.append({"center": (centroid.x, centroid.y, 0), "coords": coords})
+            if 'amenity' in a.tags:
+                pass
+            else:
+                if a.tags.get('landuse') != 'residential' and a.tags.get('natural') != 'water':
+                    wkb = wkbfab.create_multipolygon(a)
+                    poly = wkblib.loads(wkb, hex=True)
+                    bound = poly.boundary
+                    centroid = poly.centroid
+                    coords = []
+                    for coord in mapping(bound)["coordinates"]:
+                        for point_coord in coord:
+                            coords.append({"lat": point_coord[1], "lng": point_coord[0]})
+                    self.forests.append({"center": (centroid.x, centroid.y, 0), "coords": coords})
 
     def way(self, w):
         if 'highway' in w.tags:
@@ -259,6 +263,7 @@ def createHouse(_coordX, _coordY, _iteration):
             collection.objects.link(obj)
 
 def createForest():
+    cube_obj = bpy.data.objects['BoundingBox']
     file_path = ASSETS_PATH
     inner_path = 'Object'
     bpy.ops.wm.append(
@@ -291,7 +296,7 @@ def createForest():
 
     forest_collection = bpy.data.collections.get("Forests")
         
-    if forest_collection:
+    if len(forest_collection.objects) > 0:
         forest_objects = []
         for obj in forest_collection.objects:
             if obj.type == 'MESH':
@@ -301,31 +306,48 @@ def createForest():
         ctx['selected_editable_objects'] = forest_objects
         bpy.ops.object.join(ctx)
 
-    if bpy.data.objects["forest0"]:
-        forest_obj = bpy.data.objects["forest0"]
-        forest_obj.modifiers.new("forestTreeOneParticles", type='PARTICLE_SYSTEM')
-        forest_obj.modifiers.new("forestTreeTwoParticles", type='PARTICLE_SYSTEM')
-        forest_obj.modifiers.new("forestTreeThreeParticles", type='PARTICLE_SYSTEM')
-        forest_obj.show_instancer_for_render = False
-        forest_obj.show_instancer_for_viewport = False
+        try:
+            bpy.data.objects["forest0"]
+        except:
+            pass
+        else:
+            forest_obj = bpy.data.objects["forest0"]
+            forest_obj.modifiers.new("forestTreeOneParticles", type='PARTICLE_SYSTEM')
+            forest_obj.modifiers.new("forestTreeTwoParticles", type='PARTICLE_SYSTEM')
+            forest_obj.modifiers.new("forestTreeThreeParticles", type='PARTICLE_SYSTEM')
+            forest_obj.show_instancer_for_render = False
+            forest_obj.show_instancer_for_viewport = False
 
-        for i in range(3):
-            partTree = forest_obj.particle_systems[i]
-            partTree.seed = random.randrange(1,100)
-            settingsTree = partTree.settings
-            settingsTree.particle_size = 0.3
-            settingsTree.size_random = 0.1
-            settingsTree.count = 2000
-            settingsTree.type = 'HAIR'
-            settingsTree.render_type = 'OBJECT'
-            settingsTree.use_rotations = True
-            settingsTree.rotation_mode = 'NONE'
-            if i == 0:
-                settingsTree.instance_object = bpy.data.objects["Cube"]
-            elif i == 1:
-                settingsTree.instance_object = bpy.data.objects["TreeTwo"]
-            elif i == 2:
-                settingsTree.instance_object = bpy.data.objects["TreeThree"]
+            for i in range(3):
+                partTree = forest_obj.particle_systems[i]
+                partTree.seed = random.randrange(1,100)
+                settingsTree = partTree.settings
+                settingsTree.particle_size = 0.3
+                settingsTree.size_random = 0.1
+                settingsTree.count = 800
+                settingsTree.type = 'HAIR'
+                settingsTree.render_type = 'OBJECT'
+                settingsTree.use_rotations = True
+                settingsTree.rotation_mode = 'NONE'
+                if i == 0:
+                    settingsTree.instance_object = bpy.data.objects["Cube"]
+                elif i == 1:
+                    settingsTree.instance_object = bpy.data.objects["TreeTwo"]
+                elif i == 2:
+                    settingsTree.instance_object = bpy.data.objects["TreeThree"]
+            
+            forest_obj.modifiers.new('forestBoolean', type='BOOLEAN')
+            forest_obj.modifiers['forestBoolean'].object = cube_obj
+            forest_obj.modifiers['forestBoolean'].solver = 'FAST'
+            forest_obj.modifiers['forestBoolean'].operation = 'INTERSECT'
+            bpy.context.view_layer.objects.active = forest_obj
+            bpy.ops.object.modifier_apply(modifier="forestBoolean")
+            bpy.context.view_layer.objects.active = None
+
+    for coll in cube_obj.users_collection:
+        # Unlink the object
+        coll.objects.unlink(cube_obj)
+
 
 def createFloor(_length, _width):
     bpy.ops.mesh.primitive_plane_add(size=1)
@@ -336,51 +358,63 @@ def createFloor(_length, _width):
     mat_floor = bpy.data.materials.new("Floor Material")
     mat_floor.use_nodes = True
     nodes_floor = mat_floor.node_tree.nodes
-    nodes_floor["Principled BSDF"].inputs[0].default_value = [0, 0.3, 0, 1.000000]
+    nodes_floor["Principled BSDF"].inputs[0].default_value = [0, 0.3, 0, 1]
 
     obj.data.materials.append(mat_floor)
 
-def createStreet(_verts, _iteration):
-    bpy.ops.wm.append(
-        filepath=os.path.join(STREET_ASSETS_PATH, 'Object', 'StreetPart'),
-        directory=os.path.join(STREET_ASSETS_PATH, 'Object'),
-        filename='StreetPart'
-    )
-    street_collection = bpy.data.collections.get("Streets")
-    
-    obj = bpy.data.objects['StreetPart']
-    obj.name = 'StreetPart' + str(_iteration)
+def createBoundingBox(_length, _width):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(_length / 2, -(_width / 2), 45), scale=(_length, _width, 100))
+    obj = bpy.data.objects['Cube']
+    obj.name = "BoundingBox"
 
-    for coll in obj.users_collection:
-        # Unlink the object
-        coll.objects.unlink(obj)
-    street_collection.objects.link(obj)
-
+def createStreet(_verts, _width, _height, _iteration):
     curveData = bpy.data.curves.new('streetCurve' + str(_iteration), type='CURVE')
     curveData.dimensions = '3D'
     curveData.resolution_u = 2
     # map coords to spline
     polyline = curveData.splines.new('POLY')
-    polyline.points.add(len(_verts)-1)
-    for i, coord in enumerate(_verts):
+    polypoints = []
+    for coord in _verts:
         x,y,z = coord
-        polyline.points[i].co = (x, y, z, 1)
-    # create Object
-    curveObj = bpy.data.objects.new('street' + str(_iteration), curveData)
-    curveData.bevel_depth = 0.01
+        if x > 0 and x <= _width and y < 0 and y >= -_height:
+            polypoints.append((x,y,z,1))
+    polyline.points.add(len(polypoints) - 1)
+    for i, coords in enumerate(polypoints):
+        polyline.points[i].co = coords
 
-    # add modifiers to align and multiply StreetPart to Street
-    obj.modifiers.new('StreetPartArray' + str(_iteration), type='ARRAY')
-    obj.modifiers['StreetPartArray' + str(_iteration)].fit_type = 'FIT_CURVE'
-    obj.modifiers['StreetPartArray' + str(_iteration)].curve = curveObj
-    obj.modifiers.new('StreetPartCurve' + str(_iteration), type='CURVE')
-    obj.modifiers['StreetPartCurve' + str(_iteration)].object = curveObj
+    # only create streets if it has more than 2 vert in bounds
+    if len(polyline.points) > 2:
+        
+        bpy.ops.wm.append(
+            filepath=os.path.join(STREET_ASSETS_PATH, 'Object', 'StreetPart'),
+            directory=os.path.join(STREET_ASSETS_PATH, 'Object'),
+            filename='StreetPart'
+        )
+        street_collection = bpy.data.collections.get("Streets")
+        
+        obj = bpy.data.objects['StreetPart']
+        obj.name = 'StreetPart' + str(_iteration)
 
-    # attach to collection
-    street_collection.objects.link(curveObj)
+        for coll in obj.users_collection:
+            # Unlink the object
+            coll.objects.unlink(obj)
+        street_collection.objects.link(obj)
 
-    # create vehicles on streets
-    if len(_verts) > 2:
+        # create Object
+        curveObj = bpy.data.objects.new('street' + str(_iteration), curveData)
+        curveData.bevel_depth = 0.01
+
+        # add modifiers to align and multiply StreetPart to Street
+        obj.modifiers.new('StreetPartArray' + str(_iteration), type='ARRAY')
+        obj.modifiers['StreetPartArray' + str(_iteration)].fit_type = 'FIT_CURVE'
+        obj.modifiers['StreetPartArray' + str(_iteration)].curve = curveObj
+        obj.modifiers.new('StreetPartCurve' + str(_iteration), type='CURVE')
+        obj.modifiers['StreetPartCurve' + str(_iteration)].object = curveObj
+
+        # attach to collection
+        street_collection.objects.link(curveObj)
+
+        # create vehicles on streets
         bpy.ops.wm.append(
             filepath=os.path.join(ASSETS_PATH, 'Object', 'Wagen'),
             directory=os.path.join(ASSETS_PATH, 'Object'),
@@ -395,8 +429,8 @@ def createStreet(_verts, _iteration):
 
         street_collection.objects.link(objWagon)
 
-        wagonLoc = random.randrange(1, len(_verts)-1)
-        x,y,z = _verts[wagonLoc]
+        wagonLoc = random.randrange(1, len(polyline.points)-1)
+        x,y,z,a = polyline.points[wagonLoc].co
         objWagon.location.x = x
         objWagon.location.y = y
         objWagon.location.z = 0.8
@@ -495,6 +529,7 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
     a_forest = 0
     a_streets = 0
     createFloor(_mapLength + 100, _mapWidth + 100)
+    createBoundingBox(_mapLength + 100, _mapWidth + 100)
 
     forest_collection = bpy.data.collections.new("Forests")
     bpy.context.scene.collection.children.link(forest_collection)
@@ -508,7 +543,7 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
             along_forest = float(forest_border["lng"]) - _longWest
             x_forest = lat_calc * alat_forest
             y_forest = long_calc * along_forest
-            forest_verts.append((x_forest + 50, - (y_forest - 50), 0))
+            forest_verts.append((x_forest + 50, - (y_forest + 50), 0))
 
         faces = [[i for i in range(len(forest_verts)-1)]]
 
@@ -522,12 +557,12 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
         a_forest += 1
   
     # while a < len(_buildings):
-    while a < 20:
+    while a < 50:
         alat = float(_buildings[a]["lat"]) - _latSouth
         along = float(_buildings[a]["lng"]) - _longWest
         x = lat_calc * alat
         y = long_calc * along
-        createHouse(x + 50, - (y - 50), a)
+        createHouse(x + 50, - (y + 50), a)
         a += 1
 
     while a_streets < len(_streets):
@@ -538,9 +573,9 @@ def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buil
             along_street = float(street["lng"]) - _longWest
             x_street = lat_calc * alat_street
             y_street = long_calc * along_street
-            street_verts.append((x_street + 50, - (y_street - 50), 0))
+            street_verts.append((x_street + 50, - (y_street + 50), 0))
 
-        createStreet(street_verts, a_streets)
+        createStreet(street_verts, _mapLength + 100, _mapWidth + 100, a_streets)
         
         a_streets += 1
 
