@@ -14,8 +14,18 @@ STREET_ASSETS_PATH = 'D:/Dateien/Uni/Unterricht/5. Semester/DaVinMedPro/Code/Dat
 
 # OSM_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/gottenheim.osm'
 # ASSETS_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/allAssets.blend'
+# STREET_ASSETS_PATH = 'D:/Schule/Datenverarbeitung/DatenverarbeitungSoSe22/Assets/street.blend'
 
 class BuildingListHandler(o.SimpleHandler):
+    # get bound coords of whole map
+    f = o.io.Reader(OSM_PATH, o.osm.osm_entity_bits.NOTHING)
+    box = f.header().box()
+    left = str(box.bottom_left).split("/")[0]
+    bottom = str(box.bottom_left).split("/")[1]
+    right = str(box.top_right).split("/")[0]
+    top = str(box.top_right).split("/")[1]
+
+    map_bounds = {"minlat": float(bottom), "minlon": float(left), "maxlat": float(top), "maxlon": float(right)}
 
     buildings = []
     forests = []
@@ -48,8 +58,6 @@ class BuildingListHandler(o.SimpleHandler):
             for coord in list(bound):
                 coords.append({"lat": coord[1], "lng": coord[0]})
             self.streets.append(coords)
-
-        
 
 def createHouse(_coordX, _coordY, _iteration):
     #Set the range for the diffrent parts for the house. 
@@ -332,74 +340,13 @@ def createFloor(_length, _width):
 
     obj.data.materials.append(mat_floor)
 
-def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buildings, _forests, _streets):
-    lat_calc = (_mapLength) / (_latNorth - _latSouth)
-    long_calc = (_mapWidth) / -((_longWest - _longEast))
-    a = 0
-    a_forest = 0
-    a_streets = 0
-    createFloor(_mapLength + 100, _mapWidth + 100)
-
-    forest_collection = bpy.data.collections.new("Forests")
-    bpy.context.scene.collection.children.link(forest_collection)
-    street_collection = bpy.data.collections.new("aStreets")
-    bpy.context.scene.collection.children.link(street_collection)
-
-    while a_forest < len(_forests):
-        forest_verts = []
-        for forest_border in _forests[a_forest]["coords"]:
-            alat_forest = float(forest_border["lat"]) - _latSouth
-            along_forest = float(forest_border["lng"]) - _longWest
-            x_forest = lat_calc * alat_forest
-            y_forest = long_calc * along_forest
-            forest_verts.append((x_forest, -y_forest, 0))
-
-        faces = [[i for i in range(len(forest_verts)-1)]]
-
-        mesh = bpy.data.meshes.new("forest" + str(a_forest))
-        mesh.from_pydata(vertices=forest_verts, edges=[], faces=faces)
-        mesh.update()
-
-        obj = bpy.data.objects.new("forest" + str(a_forest), mesh)
-        forest_collection.objects.link(obj)
-
-        a_forest += 1
-  
-    # while a < len(_buildings):
-    while a < 20:
-        alat = float(_buildings[a]["lat"]) - _latSouth
-        along = float(_buildings[a]["lng"]) - _longWest
-        x = lat_calc * alat
-        y = long_calc * along
-        createHouse(x, -y, a)
-        a += 1
-
-    while a_streets < len(_streets):
-        street_verts = []
-
-        for street in _streets[a_streets]:
-            alat_street = float(street["lat"]) - _latSouth
-            along_street = float(street["lng"]) - _longWest
-            x_street = lat_calc * alat_street
-            y_street = long_calc * along_street
-            street_verts.append((x_street, -y_street, 0))
-
-        createStreet(street_verts, a_streets)
-        
-        a_streets += 1
-
-    createForest()
-
-
-
-
 def createStreet(_verts, _iteration):
     bpy.ops.wm.append(
         filepath=os.path.join(STREET_ASSETS_PATH, 'Object', 'StreetPart'),
         directory=os.path.join(STREET_ASSETS_PATH, 'Object'),
         filename='StreetPart'
     )
-    street_collection = bpy.data.collections.get("aStreets")
+    street_collection = bpy.data.collections.get("Streets")
     
     obj = bpy.data.objects['StreetPart']
     obj.name = 'StreetPart' + str(_iteration)
@@ -429,13 +376,30 @@ def createStreet(_verts, _iteration):
     obj.modifiers.new('StreetPartCurve' + str(_iteration), type='CURVE')
     obj.modifiers['StreetPartCurve' + str(_iteration)].object = curveObj
 
-
-
-
     # attach to collection
     street_collection.objects.link(curveObj)
 
+    # create vehicles on streets
+    if len(_verts) > 2:
+        bpy.ops.wm.append(
+            filepath=os.path.join(ASSETS_PATH, 'Object', 'Wagen'),
+            directory=os.path.join(ASSETS_PATH, 'Object'),
+            filename='Wagen'
+        )
+            
+        objWagon = bpy.data.objects['Wagen']
+        objWagon.name = 'Wagon' + str(_iteration)
+        for coll in objWagon.users_collection:
+            # Unlink the object
+            coll.objects.unlink(objWagon)
 
+        street_collection.objects.link(objWagon)
+
+        wagonLoc = random.randrange(1, len(_verts)-1)
+        x,y,z = _verts[wagonLoc]
+        objWagon.location.x = x
+        objWagon.location.y = y
+        objWagon.location.z = 0.8
 
 
 def createWindowMaterialDay():
@@ -524,15 +488,73 @@ def addWorldSun():
     sonne.rotation_euler[1]= radians(-43)
     sonne.rotation_euler[2]= radians(8)
     
-def main(_osmfile):
-    ml = 300
-    lats = 48.0489500
-    latn = 48.0520900
-    mw = 700
-    lonw = 7.7151600
-    lone = 7.7235800
+def map(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buildings, _forests, _streets):
+    lat_calc = (_mapLength) / (_latNorth - _latSouth)
+    long_calc = (_mapWidth) / -((_longWest - _longEast))
+    a = 0
+    a_forest = 0
+    a_streets = 0
+    createFloor(_mapLength + 100, _mapWidth + 100)
 
+    forest_collection = bpy.data.collections.new("Forests")
+    bpy.context.scene.collection.children.link(forest_collection)
+    street_collection = bpy.data.collections.new("Streets")
+    bpy.context.scene.collection.children.link(street_collection)
+
+    while a_forest < len(_forests):
+        forest_verts = []
+        for forest_border in _forests[a_forest]["coords"]:
+            alat_forest = float(forest_border["lat"]) - _latSouth
+            along_forest = float(forest_border["lng"]) - _longWest
+            x_forest = lat_calc * alat_forest
+            y_forest = long_calc * along_forest
+            forest_verts.append((x_forest + 50, - (y_forest - 50), 0))
+
+        faces = [[i for i in range(len(forest_verts)-1)]]
+
+        mesh = bpy.data.meshes.new("forest" + str(a_forest))
+        mesh.from_pydata(vertices=forest_verts, edges=[], faces=faces)
+        mesh.update()
+
+        obj = bpy.data.objects.new("forest" + str(a_forest), mesh)
+        forest_collection.objects.link(obj)
+
+        a_forest += 1
+  
+    # while a < len(_buildings):
+    while a < 20:
+        alat = float(_buildings[a]["lat"]) - _latSouth
+        along = float(_buildings[a]["lng"]) - _longWest
+        x = lat_calc * alat
+        y = long_calc * along
+        createHouse(x + 50, - (y - 50), a)
+        a += 1
+
+    while a_streets < len(_streets):
+        street_verts = []
+
+        for street in _streets[a_streets]:
+            alat_street = float(street["lat"]) - _latSouth
+            along_street = float(street["lng"]) - _longWest
+            x_street = lat_calc * alat_street
+            y_street = long_calc * along_street
+            street_verts.append((x_street + 50, - (y_street - 50), 0))
+
+        createStreet(street_verts, a_streets)
+        
+        a_streets += 1
+
+    createForest()
+
+def main(_osmfile):
     handler = BuildingListHandler()
+
+    ml = 300
+    lats = handler.map_bounds["minlat"]
+    latn = handler.map_bounds["maxlat"]
+    mw = 700
+    lonw = handler.map_bounds["minlon"]
+    lone = handler.map_bounds["maxlon"]
 
     handler.apply_file(_osmfile)
 
