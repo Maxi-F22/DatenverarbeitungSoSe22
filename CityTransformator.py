@@ -1,4 +1,3 @@
-from pydoc import describe
 import osmium as o
 import shapely.wkb as wkblib
 from shapely.geometry import mapping
