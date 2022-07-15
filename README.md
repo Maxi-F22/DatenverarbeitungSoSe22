@@ -37,7 +37,7 @@ Falls dies vorkommt, von Hand die Modulordner in das folgende Verzeichnis legen:
 6. Das Add-on aktivieren
 7. Im Viewport von Blender F3 drücken und den "City Transform Operator" auswählen
 
-Falls ein anderer Kartenausschnitt benutzt werden soll, kann man auf [Open Street Map](https://www.openstreetmap.org/) einen Ausschnitt exportieren und diesen in den Assets Ordner in Documents kopieren. Die Datei muss den Namen "map.osm" haben. Der Kartenausschnitt sollte nicht zu groß gewählt werden.
+Falls ein anderer Kartenausschnitt benutzt werden soll, kann man auf [Open Street Map](https://www.openstreetmap.org/) einen Ausschnitt exportieren und diesen in den Assets Ordner in Documents kopieren. Die Datei muss den Namen "map.osm" haben. Der Kartenausschnitt sollte nicht zu groß gewählt werden. Nachdem eine neue Map in den Ordner Assets gelegt wurde, muss das Add-On neu in Blender reingeladen werden.
 
 ### Benutzung des Add-Ons:
 1. Nachdem es in Blender mit F3 geladen wurde, erscheint rechts ein Panel
