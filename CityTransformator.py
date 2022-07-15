@@ -15,6 +15,7 @@ bl_info = {
     "category" : "Add Mesh",
 }
 
+# Path to the Assets
 user_asset_path = os.path.expanduser('~\Documents\Blender\Assets')
 
 wkbfab = o.geom.WKBFactory()
@@ -59,6 +60,7 @@ class TRANSFORMATOR_PT_panel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = 'Transformator Addon'
 
+    # create the options panel
     def draw(self, context):
         layout = self.layout
         scene = context.scene
@@ -80,6 +82,7 @@ class executeAction(bpy.types.Operator):
     bl_idname = "button.execute"
     bl_label = "execute"
 
+    # set the options variables and build the city
     def execute(self, context):
         global PROP_NIGHTTIME, PROP_EPOXY, PROP_NUMBER_HOUSES, PROP_NUMBER_TREES, PROP_NUMBER_GRASS
         PROP_NIGHTTIME = bpy.data.scenes["Scene"].prop_data.time_night
@@ -106,6 +109,7 @@ class BuildingListHandler(o.SimpleHandler):
     forests = []
     streets = []
 
+    # get osm data, filtered by tags
     def area(self, a):
         if 'building' in a.tags:
             wkb = wkbfab.create_multipolygon(a)
@@ -139,10 +143,11 @@ class BuildingListHandler(o.SimpleHandler):
             self.streets.append(coords)
 
 class CityTransformator():
+    # start the city transform
     def start(self):
-        bpy.ops.object.select_all(action='SELECT') # selektiert alle Objekte
-        bpy.ops.object.delete(use_global=False, confirm=False) # löscht selektierte objekte
-        bpy.ops.outliner.orphans_purge() # löscht überbleibende Meshdaten etc.
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.object.delete(use_global=False, confirm=False)
+        bpy.ops.outliner.orphans_purge()
         for col in bpy.data.collections:
             bpy.data.collections.remove(col)
         CityTransformator.createWindowMaterialDay()
@@ -179,7 +184,7 @@ class CityTransformator():
                 #load the first part of the house
                 file_path = ASSETS_PATH
                 inner_path = 'Object'
-                object_name = 'FensterDownOne'
+                object_name = 'WindowDownOne'
     
                 bpy.ops.wm.append(
                     filepath=os.path.join(file_path, inner_path, object_name),
@@ -189,19 +194,19 @@ class CityTransformator():
                 #rename the object 
                 obj = bpy.data.objects['downOne']
                 obj.name = 'downOne' + str(_iteration)
-                objWindows = bpy.data.objects['FensterDownOne']
-                objWindows.name = 'FensterDownOne' + str(_iteration)
+                obj_windows = bpy.data.objects['WindowDownOne']
+                obj_windows.name = 'WindowDownOne' + str(_iteration)
 
                 #set the right window material for the choosen Time
-                CityTransformator.checkDayAndNight(objWindows)
+                CityTransformator.checkDayAndNight(obj_windows)
                 #add random rotation and the right position. 
                 obj.rotation_euler[2] = radians(SELECT_ROT)
                 obj.location[0] = _coordX
                 obj.location[1] = _coordY
-                for coll in objWindows.users_collection:
+                for coll in obj_windows.users_collection:
                     # Unlink the object
-                    coll.objects.unlink(objWindows)
-                collection.objects.link(objWindows)
+                    coll.objects.unlink(obj_windows)
+                collection.objects.link(obj_windows)
                 for coll in obj.users_collection:
                     # Unlink the object
                     coll.objects.unlink(obj)
@@ -209,7 +214,7 @@ class CityTransformator():
             case 2:
                 file_path = ASSETS_PATH
                 inner_path = 'Object'
-                object_name = 'FensterDownTwo'
+                object_name = 'WindowDownTwo'
     
                 bpy.ops.wm.append(
                     filepath=os.path.join(file_path, inner_path, object_name),
@@ -218,17 +223,17 @@ class CityTransformator():
                 )
                 obj = bpy.data.objects['downTwo']
                 obj.name = 'downTwo' + str(_iteration)
-                objWindows = bpy.data.objects['FensterDownTwo']
-                objWindows.name = 'FensterDownTwo' + str(_iteration)
+                obj_windows = bpy.data.objects['WindowDownTwo']
+                obj_windows.name = 'WindowDownTwo' + str(_iteration)
 
-                CityTransformator.checkDayAndNight(objWindows)
+                CityTransformator.checkDayAndNight(obj_windows)
                 obj.rotation_euler[2] = radians(SELECT_ROT)
                 obj.location[0] = _coordX
                 obj.location[1] = _coordY
-                for coll in objWindows.users_collection:
+                for coll in obj_windows.users_collection:
                     # Unlink the object
-                    coll.objects.unlink(objWindows)
-                collection.objects.link(objWindows)
+                    coll.objects.unlink(obj_windows)
+                collection.objects.link(obj_windows)
                 for coll in obj.users_collection:
                     # Unlink the object
                     coll.objects.unlink(obj)
@@ -257,7 +262,7 @@ class CityTransformator():
             case 1:
                 file_path = ASSETS_PATH
                 inner_path = 'Object'
-                object_name = 'FensterMid'
+                object_name = 'WindowMid'
     
                 bpy.ops.wm.append(
                     filepath=os.path.join(file_path, inner_path, object_name),
@@ -266,17 +271,17 @@ class CityTransformator():
                 )
                 obj = bpy.data.objects['mid']
                 obj.name = 'mid' + str(_iteration)
-                objWindows = bpy.data.objects['FensterMid']
-                objWindows.name = 'FensterMid' + str(_iteration)
+                obj_windows = bpy.data.objects['WindowMid']
+                obj_windows.name = 'WindowMid' + str(_iteration)
 
-                CityTransformator.checkDayAndNight(objWindows)
+                CityTransformator.checkDayAndNight(obj_windows)
                 obj.rotation_euler[2] = radians(SELECT_ROT)
                 obj.location[0] = _coordX
                 obj.location[1] = _coordY
-                for coll in objWindows.users_collection:
+                for coll in obj_windows.users_collection:
                     # Unlink the object
-                    coll.objects.unlink(objWindows)
-                collection.objects.link(objWindows)
+                    coll.objects.unlink(obj_windows)
+                collection.objects.link(obj_windows)
                 for coll in obj.users_collection:
                     # Unlink the object
                     coll.objects.unlink(obj)
@@ -284,7 +289,7 @@ class CityTransformator():
             case 2:
                 file_path = ASSETS_PATH
                 inner_path = 'Object'
-                object_name = 'FensterMidBalk'
+                object_name = 'WindowMidBalk'
     
                 bpy.ops.wm.append(
                     filepath=os.path.join(file_path, inner_path, object_name),
@@ -293,17 +298,17 @@ class CityTransformator():
                 )
                 obj = bpy.data.objects['midbalk']
                 obj.name = 'midbalk' + str(_iteration)
-                objWindows = bpy.data.objects['FensterMidBalk']
-                objWindows.name = 'FensterMidBalk' + str(_iteration)
+                obj_windows = bpy.data.objects['WindowMidBalk']
+                obj_windows.name = 'WindowMidBalk' + str(_iteration)
 
-                CityTransformator.checkDayAndNight(objWindows)
+                CityTransformator.checkDayAndNight(obj_windows)
                 obj.rotation_euler[2] = radians(SELECT_ROT)
                 obj.location[0] = _coordX
                 obj.location[1] = _coordY
-                for coll in objWindows.users_collection:
+                for coll in obj_windows.users_collection:
                     # Unlink the object
-                    coll.objects.unlink(objWindows)
-                collection.objects.link(objWindows)
+                    coll.objects.unlink(obj_windows)
+                collection.objects.link(obj_windows)
                 for coll in obj.users_collection:
                     # Unlink the object
                     coll.objects.unlink(obj)
@@ -350,12 +355,14 @@ class CityTransformator():
                 collection.objects.link(obj)
 
     def createForest(_length, _width):
+        # create cube for cutting of the forest mesh outside of bounds
         bpy.ops.mesh.primitive_cube_add(size=1, location=(_length / 2, -(_width / 2), 45), scale=(_length - 10, _width - 10, 100))
         obj = bpy.data.objects['Cube']
         obj.name = "BoundingBox"
         cube_obj = bpy.data.objects['BoundingBox']
         file_path = ASSETS_PATH
         inner_path = 'Object'
+        # add the tree assets
         bpy.ops.wm.append(
             filepath=os.path.join(file_path, inner_path, 'TreeOne'),
             directory=os.path.join(file_path, inner_path),
@@ -387,6 +394,7 @@ class CityTransformator():
         forest_collection = bpy.data.collections.get("Forests")
             
         if len(forest_collection.objects) > 0:
+            # join all forest meshes into one
             forest_objects = []
             for obj in forest_collection.objects:
                 if obj.type == 'MESH':
@@ -401,6 +409,7 @@ class CityTransformator():
             except:
                 pass
             else:
+                # add particle modifier
                 forest_obj = bpy.data.objects["forest0"]
                 forest_obj.modifiers.new("forestTreeOneParticles", type='PARTICLE_SYSTEM')
                 forest_obj.modifiers.new("forestTreeTwoParticles", type='PARTICLE_SYSTEM')
@@ -409,25 +418,26 @@ class CityTransformator():
                 forest_obj.show_instancer_for_viewport = False
 
                 for i in range(3):
-                    partTree = forest_obj.particle_systems[i]
-                    partTree.seed = random.randrange(1,101)
-                    settingsTree = partTree.settings
-                    settingsTree.particle_size = 0.3
-                    settingsTree.size_random = 0.1
-                    settingsTree.count = PROP_NUMBER_TREES
-                    settingsTree.type = 'HAIR'
-                    settingsTree.render_type = 'OBJECT'
-                    settingsTree.use_rotations = True
-                    settingsTree.rotation_mode = 'OB_Z'
-                    settingsTree.phase_factor_random = 2
-                    settingsTree.distribution = 'RAND'
+                    part_tree = forest_obj.particle_systems[i]
+                    part_tree.seed = random.randrange(1,101)
+                    settings_tree = part_tree.settings
+                    settings_tree.particle_size = 0.3
+                    settings_tree.size_random = 0.1
+                    settings_tree.count = PROP_NUMBER_TREES
+                    settings_tree.type = 'HAIR'
+                    settings_tree.render_type = 'OBJECT'
+                    settings_tree.use_rotations = True
+                    settings_tree.rotation_mode = 'OB_Z'
+                    settings_tree.phase_factor_random = 2
+                    settings_tree.distribution = 'RAND'
                     if i == 0:
-                        settingsTree.instance_object = bpy.data.objects["TreeOne"]
+                        settings_tree.instance_object = bpy.data.objects["TreeOne"]
                     elif i == 1:
-                        settingsTree.instance_object = bpy.data.objects["TreeTwo"]
+                        settings_tree.instance_object = bpy.data.objects["TreeTwo"]
                     elif i == 2:
-                        settingsTree.instance_object = bpy.data.objects["TreeThree"]
+                        settings_tree.instance_object = bpy.data.objects["TreeThree"]
                 
+                # add boolean modifier and apply to cut of forests out of bounds
                 forest_obj.modifiers.new('forestBoolean', type='BOOLEAN')
                 forest_obj.modifiers['forestBoolean'].object = cube_obj
                 forest_obj.modifiers['forestBoolean'].solver = 'FAST'
@@ -441,16 +451,19 @@ class CityTransformator():
 
 
     def createFloor(_length, _width):
+        # add plane that everything sits on
         bpy.ops.mesh.primitive_plane_add(size=1)
-        objFloorPlane = bpy.data.objects['Plane']
-        objFloorPlane.name = "FloorPlane"
-        objFloorPlane.scale = (_length, _width, 1)
-        objFloorPlane.location = (_length / 2, - (_width / 2), 0)
+        obj_floorplane = bpy.data.objects['Plane']
+        obj_floorplane.name = "FloorPlane"
+        obj_floorplane.scale = (_length, _width, 1)
+        obj_floorplane.location = (_length / 2, - (_width / 2), 0)
 
+        # add cube below the floor
         bpy.ops.mesh.primitive_cube_add(size=1, location=(_length / 2, -(_width / 2), -2.5), scale=(_length, _width, 5))
         obj = bpy.data.objects['Cube']
         obj.name = "Floor"
 
+        # add materials
         mat_floor = bpy.data.materials.new("Floor Material")
         mat_floor.use_nodes = True
         nodes_floor = mat_floor.node_tree.nodes
@@ -460,9 +473,10 @@ class CityTransformator():
         nodes_ground = mat_ground.node_tree.nodes
         nodes_ground["Principled BSDF"].inputs[0].default_value = [0.096283, 0.051237, 0.001711, 1]
 
-        objFloorPlane.data.materials.append(mat_floor)
+        obj_floorplane.data.materials.append(mat_floor)
         obj.data.materials.append(mat_ground)
 
+        # add grass and set particle modifier on plane
         file_path = ASSETS_PATH
         inner_path = 'Object'
         bpy.ops.wm.append(
@@ -474,28 +488,29 @@ class CityTransformator():
         for coll in obj.users_collection:
             # Unlink the object
             coll.objects.unlink(objGrass)
-        objFloorPlane.modifiers.new("grassShrubParticles", type='PARTICLE_SYSTEM')
+        obj_floorplane.modifiers.new("grassShrubParticles", type='PARTICLE_SYSTEM')
 
-        partGrass = objFloorPlane.particle_systems[0]
-        partGrass.seed = random.randrange(1,101)
-        settingsGrass = partGrass.settings
-        settingsGrass.particle_size = 2
-        settingsGrass.size_random = 0.2
-        settingsGrass.count = PROP_NUMBER_GRASS
-        settingsGrass.type = 'HAIR'
-        settingsGrass.render_type = 'OBJECT'
-        settingsGrass.use_rotations = True
-        settingsGrass.rotation_mode = 'OB_Z'
-        settingsGrass.phase_factor_random = 2
+        part_grass = obj_floorplane.particle_systems[0]
+        part_grass.seed = random.randrange(1,101)
+        settings_grass = part_grass.settings
+        settings_grass.particle_size = 2
+        settings_grass.size_random = 0.2
+        settings_grass.count = PROP_NUMBER_GRASS
+        settings_grass.type = 'HAIR'
+        settings_grass.render_type = 'OBJECT'
+        settings_grass.use_rotations = True
+        settings_grass.rotation_mode = 'OB_Z'
+        settings_grass.phase_factor_random = 2
 
-        settingsGrass.instance_object = objGrass
+        settings_grass.instance_object = objGrass
 
     def createStreet(_verts, _width, _height, _iteration):
-        curveData = bpy.data.curves.new('streetCurve' + str(_iteration), type='CURVE')
-        curveData.dimensions = '3D'
-        curveData.resolution_u = 2
+        # create curve from coords
+        curve_data = bpy.data.curves.new('streetCurve' + str(_iteration), type='CURVE')
+        curve_data.dimensions = '3D'
+        curve_data.resolution_u = 2
         # map coords to spline
-        polyline = curveData.splines.new('POLY')
+        polyline = curve_data.splines.new('POLY')
         polypoints = []
         for coord in _verts:
             x,y,z = coord
@@ -507,7 +522,7 @@ class CityTransformator():
 
         # only create streets if it has more than 2 vert in bounds
         if len(polyline.points) > 2:
-            
+            # add street part
             bpy.ops.wm.append(
                 filepath=os.path.join(ASSETS_PATH, 'Object', 'StreetPart'),
                 directory=os.path.join(ASSETS_PATH, 'Object'),
@@ -524,18 +539,18 @@ class CityTransformator():
             street_collection.objects.link(obj)
 
             # create Object
-            curveObj = bpy.data.objects.new('street' + str(_iteration), curveData)
-            curveData.bevel_depth = 0.01
+            curve_obj = bpy.data.objects.new('street' + str(_iteration), curve_data)
+            curve_data.bevel_depth = 0.01
 
             # add modifiers to align and multiply StreetPart to Street
             obj.modifiers.new('StreetPartArray' + str(_iteration), type='ARRAY')
             obj.modifiers['StreetPartArray' + str(_iteration)].fit_type = 'FIT_CURVE'
-            obj.modifiers['StreetPartArray' + str(_iteration)].curve = curveObj
+            obj.modifiers['StreetPartArray' + str(_iteration)].curve = curve_obj
             obj.modifiers.new('StreetPartCurve' + str(_iteration), type='CURVE')
-            obj.modifiers['StreetPartCurve' + str(_iteration)].object = curveObj
+            obj.modifiers['StreetPartCurve' + str(_iteration)].object = curve_obj
 
             # attach to collection
-            street_collection.objects.link(curveObj)
+            street_collection.objects.link(curve_obj)
 
             # create vehicles on streets
             bpy.ops.wm.append(
@@ -544,20 +559,20 @@ class CityTransformator():
                 filename='Wagen'
             )
                 
-            objWagon = bpy.data.objects['Wagen']
-            objWagon.name = 'Wagon' + str(_iteration)
-            for coll in objWagon.users_collection:
+            obj_wagon = bpy.data.objects['Wagen']
+            obj_wagon.name = 'Wagon' + str(_iteration)
+            for coll in obj_wagon.users_collection:
                 # Unlink the object
-                coll.objects.unlink(objWagon)
+                coll.objects.unlink(obj_wagon)
 
-            street_collection.objects.link(objWagon)
+            street_collection.objects.link(obj_wagon)
 
-            wagonLoc = random.randrange(1, len(polyline.points)-1)
-            x,y,z,a = polyline.points[wagonLoc].co
-            objWagon.location.x = x
-            objWagon.location.y = y
-            objWagon.location.z = 0.8
-            objWagon.rotation_euler[2] = radians(random.randrange(0, 361))
+            wagon_loc = random.randrange(1, len(polyline.points)-1)
+            x,y,z,a = polyline.points[wagon_loc].co
+            obj_wagon.location.x = x
+            obj_wagon.location.y = y
+            obj_wagon.location.z = 0.8
+            obj_wagon.rotation_euler[2] = radians(random.randrange(0, 361))
 
 
     def createWindowMaterialDay():
@@ -582,27 +597,27 @@ class CityTransformator():
             mat.node_tree.nodes.remove( node_to_delete )
 
         #Add Emission Shader
-        emission_Node = mat.node_tree.nodes.new('ShaderNodeEmission')
-        emission_Node.location = (0,320)
+        emission_node = mat.node_tree.nodes.new('ShaderNodeEmission')
+        emission_node.location = (0,320)
 
         #Add right values to the shader
-        emission_Node.inputs[0].default_value = (1.0,0.534,0.029,1.0)
-        emission_Node.inputs[1].default_value = 4.0
+        emission_node.inputs[0].default_value = (1.0,0.534,0.029,1.0)
+        emission_node.inputs[1].default_value = 4.0
         
         #Conect nodes
-        shaderOutput = mat.node_tree.nodes.get('Material Output')
-        mat.node_tree.links.new(emission_Node.outputs[0], shaderOutput.inputs[0] )
+        shader_output = mat.node_tree.nodes.get('Material Output')
+        mat.node_tree.links.new(emission_node.outputs[0], shader_output.inputs[0] )
         
         #Configure scene settings 
-        eeveeObj = bpy.data.scenes['Scene'].eevee
-        eeveeObj.use_bloom = True
-        eeveeObj.bloom_color = (1.0,0.425,0.006)
-        eeveeObj.bloom_intensity = 0.5
+        eevee_obj = bpy.data.scenes['Scene'].eevee
+        eevee_obj.use_bloom = True
+        eevee_obj.bloom_color = (1.0,0.425,0.006)
+        eevee_obj.bloom_intensity = 0.5
 
     def checkDayAndNight(_objWindows):
-        dayNightSet = PROP_NIGHTTIME
+        day_night_set = PROP_NIGHTTIME
         #Check if user set checkbox for the day or night time
-        if(dayNightSet==False):
+        if(day_night_set==False):
             #set window material 
             mat = bpy.data.materials.get('Fenster')
             _objWindows.data.materials.append(mat)
@@ -614,7 +629,7 @@ class CityTransformator():
             #change world background-color
             bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (0.163,0.135,0.110,1)
             
-        elif(dayNightSet==True):
+        elif(day_night_set==True):
             #set window material 
             mat = bpy.data.materials.get('Licht_Fenster')
             _objWindows.data.materials.append(mat)
@@ -648,10 +663,10 @@ class CityTransformator():
 
         
     def createEpoxy(_length, _width):
-        setEpoxy = PROP_EPOXY
-        if(setEpoxy==False):
+        set_epoxy = PROP_EPOXY
+        if(set_epoxy==False):
             print("Epoxy Version wurde nicht ausgewählt. Das Modell wird ohne Epoxy-Erweiterung erstellt.")
-        elif(setEpoxy==True):
+        elif(set_epoxy==True):
             print("Das Model wurde in ein Epoxit-Harz-Modell umgewandelt.")
             
             #create epoxy material
@@ -675,31 +690,31 @@ class CityTransformator():
             bsdf.location = (0,0)
 
             #add Mix Shader & connect with Material Output
-            mixed_Node = mat.node_tree.nodes.new('ShaderNodeMixShader')
-            mixed_Node.location = (800,-300)
-            shaderOutput = mat.node_tree.nodes.get('Material Output')
-            shaderOutput.location = (1000,0)
-            mat.node_tree.links.new(mixed_Node.outputs[0], shaderOutput.inputs[0] )
+            mixed_node = mat.node_tree.nodes.new('ShaderNodeMixShader')
+            mixed_node.location = (800,-300)
+            shader_output = mat.node_tree.nodes.get('Material Output')
+            shader_output.location = (1000,0)
+            mat.node_tree.links.new(mixed_node.outputs[0], shader_output.inputs[0] )
 
             #connect Principled BSDF with Mix Shader
-            mat.node_tree.links.new(bsdf.outputs[0], mixed_Node.inputs[2] )
+            mat.node_tree.links.new(bsdf.outputs[0], mixed_node.inputs[2] )
 
             #add Transparent BSDF & connect with Mix Shader
-            transparent_Node = mat.node_tree.nodes.new('ShaderNodeBsdfTransparent')
-            transparent_Node.location = (0,100)
-            mat.node_tree.links.new(transparent_Node.outputs[0], mixed_Node.inputs[1] )
+            transparent_node = mat.node_tree.nodes.new('ShaderNodeBsdfTransparent')
+            transparent_node.location = (0,100)
+            mat.node_tree.links.new(transparent_node.outputs[0], mixed_node.inputs[1] )
 
             #add Frensel
-            fresnel_Node = mat.node_tree.nodes.new('ShaderNodeFresnel')
-            fresnel_Node.location = (0,230)
+            fresnel_node = mat.node_tree.nodes.new('ShaderNodeFresnel')
+            fresnel_node.location = (0,230)
 
             #add Color Ramp
-            colorRamp_Node = mat.node_tree.nodes.new('ShaderNodeValToRGB') 
-            colorRamp_Node.location = (200,300)
+            colorramp_node = mat.node_tree.nodes.new('ShaderNodeValToRGB') 
+            colorramp_node.location = (200,300)
 
             # conect Frensel with Color Ramp & Color Ramp with Mix Shader
-            mat.node_tree.links.new(fresnel_Node.outputs[0], colorRamp_Node.inputs[0] )
-            mat.node_tree.links.new(colorRamp_Node.outputs[0], mixed_Node.inputs[0] )
+            mat.node_tree.links.new(fresnel_node.outputs[0], colorramp_node.inputs[0] )
+            mat.node_tree.links.new(colorramp_node.outputs[0], mixed_node.inputs[0] )
 
             #set diffrent settings 
             mat.use_screen_refraction = True
@@ -710,18 +725,19 @@ class CityTransformator():
             
             #add cube and apply epoxy material 
             bpy.ops.mesh.primitive_cube_add(size=1)
-            objCube = bpy.data.objects['Cube']
-            objCube.name = "GlasCube"
-            objCube.data.materials.append(mat)
+            obj_cube = bpy.data.objects['Cube']
+            obj_cube.name = "GlasCube"
+            obj_cube.data.materials.append(mat)
 
             #move and sccale the cube to the right size
-            objCube.location = (_length / 2, - (_width / 2), 40)
-            objCube.scale[0] = _length
-            objCube.scale[1] = _width
-            objCube.scale[2] = 90
+            obj_cube.location = (_length / 2, - (_width / 2), 40)
+            obj_cube.scale[0] = _length
+            obj_cube.scale[1] = _width
+            obj_cube.scale[2] = 90
 
         
     def createMap(_mapLength, _mapWidth, _latSouth, _latNorth, _longWest, _longEast, _buildings, _forests, _streets):
+        # calculate blender coords
         lat_calc = (_mapLength) / (_latNorth - _latSouth)
         long_calc = (_mapWidth) / -((_longWest - _longEast))
         a = 0
@@ -735,6 +751,7 @@ class CityTransformator():
         street_collection = bpy.data.collections.new("Streets")
         bpy.context.scene.collection.children.link(street_collection)
 
+        # create forests, buildings and streets based on calculated coords
         while a_forest < len(_forests):
             forest_verts = []
             for forest_border in _forests[a_forest]["coords"]:
@@ -744,6 +761,7 @@ class CityTransformator():
                 y_forest = long_calc * along_forest
                 forest_verts.append((x_forest + 50, - (y_forest + 50), 0))
 
+            # create new meshes based on outer bounds coords of forest
             faces = [[i for i in range(len(forest_verts)-1)]]
 
             mesh = bpy.data.meshes.new("forest" + str(a_forest))
@@ -754,6 +772,8 @@ class CityTransformator():
             forest_collection.objects.link(obj)
 
             a_forest += 1
+
+        # if the user has selected a value for house count that is greater than the number of houses, set house count to that value and create all available houses
         if len(BUILDINGS) > PROP_NUMBER_HOUSES:
             while a < PROP_NUMBER_HOUSES:
                 alat = float(_buildings[a]["lat"]) - _latSouth
@@ -789,22 +809,24 @@ class CityTransformator():
         CityTransformator.createForest(_mapLength + 100, _mapWidth + 100)
 
 def main():
+    # read the osm data and set the variables
     global LAT_SOUTH, LAT_NORTH, LON_WEST, LON_EAST, BUILDINGS, FORESTS, STREETS
     handler = BuildingListHandler()
+
+    handler.apply_file(OSM_PATH)
+
     LAT_SOUTH = handler.map_bounds["minlat"]
     LAT_NORTH = handler.map_bounds["maxlat"]
     LON_WEST = handler.map_bounds["minlon"]
     LON_EAST = handler.map_bounds["maxlon"]
 
-    handler.apply_file(OSM_PATH)
-
     BUILDINGS = handler.buildings
     FORESTS = handler.forests
     STREETS = handler.streets
 
-    bpy.ops.object.select_all(action='SELECT') # selektiert alle Objekte
-    bpy.ops.object.delete(use_global=False, confirm=False) # löscht selektierte objekte
-    bpy.ops.outliner.orphans_purge() # löscht überbleibende Meshdaten etc.
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=False, confirm=False)
+    bpy.ops.outliner.orphans_purge()
     for col in bpy.data.collections:
         bpy.data.collections.remove(col)
 
